@@ -1,4 +1,4 @@
-// zapmaker optical mouse sensor program
+// zapmaker optical mouse sensor program, currently dumps pixels from sensor
 // http://zapmaker.org
 // Based on tutorial: http://www.martijnthe.nl/optimouse/
 // Based on the sketches by Beno�t Rousseau
@@ -25,8 +25,9 @@ signed char squal = 0;
 signed char shup = 0;
 signed char shdown = 0;
 signed char frame = 0;
-
-
+signed char pix = 0;
+signed char config = 0;
+int counter = 0;
 int c = 0;                                // Counter variable for coordinate reporting
 signed long lastx = 0;
 signed long lasty = 0;
@@ -46,17 +47,49 @@ void loop()
 //  if (Optical1.motion())                  // If the 'Motion' status bit is set,
 //  {
 
+  /*
     x += Optical1.dx();                   // Read the dX register and in/decrease X with that value
     y += Optical1.dy();                   // Same thing for dY register.....
+    
     squal = Optical1.squal();
     shup = Optical1.shUp();
     shdown = Optical1.shDown();
     frame = Optical1.framePer();
-    
+    */
 //  }
   
-  if (c++ & 0x10)
+  if (c++ & 0x40000)
   { 
+    // this code reads pixel data and sends it via serial - use 'processing' to display pixels, see subfolder for pde file
+    config = Optical1.config();
+    //Serial.print("config: ");
+    //Serial.println(config, BIN);
+    config |= 0x01;
+    Optical1.writeConfig(config);
+    
+    Optical1.startPixRead();
+
+    counter = 0;
+    while (counter < 324) {    
+      pix = Optical1.pixRead();
+      if (pix & 0x40) {
+        Serial.print(pix & 0x3F);
+      }
+      else {
+        Serial.print(0);
+      }
+      if (counter < 323)
+        Serial.print(",");
+      counter++;
+    }
+    Serial.println();
+
+    config = Optical1.config();
+    //Serial.print("config: ");
+    //Serial.println(config, BIN);
+    config &= 0xFE;
+    Optical1.writeConfig(config);
+    
 /*    // Report the coordinates once in a while...
     Serial.print("x=");
     Serial.print(x, DEC);
@@ -72,6 +105,7 @@ void loop()
     Serial.print(frame, DEC);
     Serial.println();*/
 
+/*
     if (lastx != x || lasty != y) {    
       Serial.print(x, DEC);
       Serial.print(",");
@@ -80,7 +114,7 @@ void loop()
       lastx = x;
       lasty = y;
     }
-    
+  */  
     c = 0;                                // Reset the report counter
   }
 }
